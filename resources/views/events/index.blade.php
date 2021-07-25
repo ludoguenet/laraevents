@@ -14,7 +14,11 @@
         <span class="font-medium text-lg text-gray-800 title-font leading-none">{{ $event->ends_at->format('d') }}</span>
         </div>
         <div class="flex-grow pl-6">
-        <h2 class="tracking-widest text-xs title-font font-medium text-indigo-500 mb-1">{{ $event->tags->first()->name }}</h2>
+          @foreach ($event->tags as $tag)
+          <h2 class="tracking-widest text-xs title-font font-medium text-indigo-500 inline-block mb-1">
+            {{ $tag->name }}{{ !$loop->last ? ', ' : '' }}
+          </h2>
+          @endforeach
         <h1 class="title-font text-xl font-medium text-gray-900 mb-3">{{ $event->title }}</h1>
         <p class="leading-relaxed mb-5">{{ $event->content }}</p>
         <a class="inline-flex items-center">

@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Tag;
 use App\Models\Event;
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
 class EventController extends Controller
@@ -14,8 +16,8 @@ class EventController extends Controller
      */
     public function index()
     {
-        $events = Event::with(['tags', 'user'])
-            // ->orderBy('premium', 'desc')
+        $events = Event::where('starts_at', '>=', now())
+            ->with(['tags', 'user'])
             ->orderBy('starts_at', 'asc')
             ->get();
 
@@ -29,7 +31,7 @@ class EventController extends Controller
      */
     public function create()
     {
-        //
+        return view('events.create');
     }
 
     /**
@@ -40,7 +42,40 @@ class EventController extends Controller
      */
     public function store(Request $request)
     {
-        //
+        $authed_user = auth()->user();
+        $amount = 1000;
+
+        if($request->filled('premium')) $amount += 500;
+
+        $authed_user->charge(
+            $amount, $request->payment_method
+        );
+
+        $event = $authed_user->events()
+            ->create([
+                'title' => $request->title,
+                'slug' => Str::slug($request->title) . '-' . uniqid(),
+                'content' => $request->content,
+                'premium' => $request->filled('premium'),
+                'starts_at' => $request->starts_at,
+                'ends_at' => $request->ends_at
+            ]);
+
+        $tags = explode(',', $request->tags);
+
+        foreach($tags as $inputTag) {
+            $nameOrSlug = trim($inputTag);
+
+            $tag = Tag::firstOrCreate([
+                'slug' => $nameOrSlug,
+            ], [
+                'name' => $nameOrSlug
+            ]);
+
+            $event->tags()->attach($tag->id);
+        }
+
+        return redirect()->route('events.index');
     }
 
     /**
